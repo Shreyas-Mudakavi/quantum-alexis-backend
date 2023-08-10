@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const orderSchema = mongoose.Schema(
+const orderSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -10,15 +10,29 @@ const orderSchema = mongoose.Schema(
     business: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Business",
+      required: true,
     },
-    products: [
-      {
-        productName: {
+    orderId: {
+      type: String,
+      required: true,
+    },
+    products: {
+      productName: [
+        {
           type: Object,
           required: true,
+          // type: mongoose.Schema.Types.ObjectId,
+          // ref: "addOn",
+          // required: true,
         },
+      ],
+      package: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Packages",
+        required: true,
       },
-    ],
+    },
+
     orderDate: {
       type: Date,
       default: Date.now,
@@ -30,7 +44,9 @@ const orderSchema = mongoose.Schema(
     },
     paymentStatus: {
       type: String,
+      default: "pending",
       required: true,
+      enum: ["pending", "paid", "failed", "expired", "canceled"],
     },
     amount: {
       type: Number,

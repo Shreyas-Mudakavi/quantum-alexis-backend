@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const error = require("./middlewares/error");
 const app = express();
 require("dotenv").config();
 
@@ -9,7 +10,6 @@ const authenticationRoutes = require("./routes/authenticationRoutes");
 const userRoutes = require("./routes/userRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const packageRoutes = require("./routes/packageRoutes");
-const { auth, isAdmin } = require("./middlewares/authMiddleware");
 
 // const createUserAndBusiness = require('./models/createData');
 
@@ -27,9 +27,11 @@ const { auth, isAdmin } = require("./middlewares/authMiddleware");
 
 app.use("/api", authenticationRoutes);
 
-app.use("/api/admin", auth, isAdmin, adminRoutes);
-app.use("/api/user", auth, userRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/user", userRoutes);
 app.use("/api/", packageRoutes);
+
+app.use(error);
 
 app.get("/", async (req, res) => {
   res.send("<h1>Welcome to Alexis website</h1>");

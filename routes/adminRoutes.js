@@ -1,527 +1,115 @@
 const express = require("express");
-const isAdmin = require("../middlewares/authMiddleware");
-const bcrypt = require("bcryptjs");
 const router = express.Router();
-const User = require("../models/userModel");
-const Order = require("../models/orderModel");
-const Business = require("../models/businessModel");
-const Package = require("../models/packageModel");
+const {
+  getAllUsers,
+  getUser,
+  updateUser,
+  deleteUser,
+  getAllBusiness,
+  deleteAllBusiness,
+  getBusiness,
+  updateBusiness,
+  createNewPackage,
+  getAllPackages,
+  getPackage,
+  updatePackage,
+  deletePackage,
+  getAllOrders,
+  getOrder,
+  getBusinessOrder,
+  getUserOrder,
+  deleteOrder,
+  getAllUserBusiness,
+  deleteBusiness,
+  getStatistics,
+} = require("../controllers/adminController");
+const { auth, isAdmin } = require("../middlewares/auth");
+const {
+  createNewAddOnProduct,
+  getAllAddOnProducts,
+  getAddOnProducts,
+  updateAddOnProducts,
+  deleteAddOnProducts,
+} = require("../controllers/addOnCOntroller");
 
 // Admin dashboard route protected with isAdmin middleware
-router.get("/dashboard", async (req, res) => {
-  // This route can be accessed only by admins
-  // Your admin dashboard logic goes here...
-  res.json({ message: "Admin Dashboard", success: true });
-});
+router.get("/statistics/:time", auth, isAdmin, getStatistics);
 
-//---------- /dashboard/users -----------------------//
+//----------------------------------------------------users-------------------------------
+//---------- /dashboard/users -----------------------
 
-router.get("/dashboard/users", async (req, res) => {
-  try {
-    // Fetch all users from the database
-    const users = await User.find({});
+router.get("/dashboard/users", auth, isAdmin, getAllUsers);
 
-    if (!users) {
-      return res.status(404).json({ message: "No users available!" });
-    }
+//---------- /dashboard/users/new-user -----------------------
 
-    res.status(200).json({ success: true, users: users });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Error fetching users" });
-  }
-});
+// router.post("/dashboard/users/new-user", createNewUser);
 
-//---------- /dashboard/users/new-user -----------------------//
+//---------- /dashboard/users/:id -----------------------
 
-router.post("/dashboard/users/new-user", async (req, res) => {
-  try {
-    const userExists = await User.findOne({ email: req.body.email });
-    if (userExists) {
-      return res
-        .status(409)
-        .send({ message: "User already exists", success: false });
-    }
+router.get("/dashboard/users/:id", auth, isAdmin, getUser);
 
-    const password = req.body.password;
-    const salt = bcrypt.genSaltSync(10);
-    const hashedPassword = bcrypt.hashSync(password, salt);
-    req.body.password = hashedPassword;
+router.patch("/dashboard/users/:id", auth, isAdmin, updateUser);
 
-    const newUser = new User(req.body);
+router.delete("/dashboard/users/:id", auth, isAdmin, deleteUser);
 
-    const businessFields = Object.keys(Business.schema.paths);
-
-    if (businessFields.some((field) => req.body[field])) {
-      // Only create the Business and associate it with the User if any business-related data is provided
-      const newBusiness = new Business(req.body);
-
-      newBusiness.user = newUser._id;
-
-      newUser.businesses.push(newBusiness._id);
-
-      await newBusiness.save();
-    }
-
-    await newUser.save();
-
-    res
-      .status(200)
-      .send({ message: "User created successfully", success: true });
-  } catch (error) {
-    console.log(error);
-    res.status(500).send({ message: "Error creating user", success: false });
-  }
-});
-
-//---------- /dashboard/users/:id -----------------------//
-
-router.get("/dashboard/users/:id", async (req, res) => {
-  try {
-    const userId = req.params.id;
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return res
-        .status(404)
-        .json({ message: "User not found", success: false });
-    }
-
-    res.status(200).json({ success: true, user: user });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Error fetching user" });
-  }
-});
-
-router.patch("/dashboard/users/:id", async (req, res) => {
-  try {
-    const userId = req.params.id;
-    const newData = req.body;
-    const user = await User.findByIdAndUpdate(userId, newData, {
-      new: true,
-      runValidators: true,
-    });
-
-    if (!user) {
-      return res
-        .status(404)
-        .json({ message: "User not found", success: false });
-    }
-
-    res.status(200).json({
-      message: "Account settings updated successfully",
-      success: true,
-      user: user,
-    });
-  } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ success: false, message: "Error updating user data" });
-  }
-});
-
-router.delete("/dashboard/users/:id", async (req, res) => {
-  try {
-    const userId = req.params.id;
-
-    const user = await User.findByIdAndDelete(userId);
-
-    if (!user) {
-      return res
-        .status(404)
-        .json({ message: "User not found", success: false });
-    }
-    const business = await Business.deleteMany({ user: userId });
-
-    if (!business) {
-      res.json({
-        message: "Business associated with user not found",
-        success: false,
-      });
-    }
-
-    res.status(200).json({
-      message: "User Account deleted successfully",
-      success: true,
-      //   data: [user, business],
-    });
-  } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ success: false, message: "Error deleting user data" });
-  }
-});
-
-//---------- /dashboard/users/:id/businesses -----------------------//
-
-router.post(
-  "/dashboard/users/:id/businesses/new-business",
-  async (req, res) => {
-    try {
-      const userId = req.params.id;
-
-      const user = await User.findById(userId);
-
-      if (!userId) {
-        return res
-          .status(404)
-          .json({ message: "User id error", success: false });
-      }
-
-      const newBusiness = new Business(req.body);
-
-      newBusiness.user = userId;
-      newBusiness.userName = user.firstName + " " + user.lastName;
-
-      user.businesses.push(newBusiness._id);
-      user.businessesName.push(newBusiness.businessName);
-
-      await user.save();
-      await newBusiness.save();
-
-      res.status(200).json({
-        message: "Business created successfully",
-        success: true,
-        data: newBusiness,
-      });
-    } catch (error) {
-      console.error(error);
-      res
-        .status(500)
-        .json({ success: false, message: "Error creating business" });
-    }
-  }
+router.get(
+  "/dashboard/users/:id/businesses",
+  auth,
+  isAdmin,
+  getAllUserBusiness
 );
+//--------------------------------business--------------------------------------------------------------------
 
-router.get("/dashboard/users/:id/businesses", async (req, res) => {
-  try {
-    const userId = req.params.id;
-    const business = await Business.find({ user: userId });
+//---------- /dashboard/users/:id/businesses -----------------------
 
-    if (business.length == 0) {
-      return res
-        .status(404)
-        .json({ message: "No Business found", success: false });
-    }
+// router.post("/dashboard/users/:id/businesses/new-business", createNewBusiness);
 
-    res.status(200).json({ success: true, data: business });
-  } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ success: false, message: "Error fetching business" });
-  }
-});
+router.get("/dashboard/businesses", auth, isAdmin, getAllBusiness);
 
-router.delete("/dashboard/users/:id/businesses", async (req, res) => {
-  try {
-    const userId = req.params.id;
+router.get("/dashboard/businesses/:id", auth, isAdmin, getBusiness);
 
-    const business = await Business.deleteMany({ user: userId });
+router.delete("/dashboard/businesses/:id", auth, isAdmin, deleteBusiness);
 
-    if (!business) {
-      return res
-        .status(404)
-        .json({ message: "Business not found", success: false });
-    }
+router.patch("/dashboard/businesses/:id", auth, isAdmin, updateBusiness);
 
-    res.status(204).json({
-      message: "Business Account deleted successfully",
-      success: true,
-      data: business,
-    });
-  } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ success: false, message: "Error deleting user data" });
-  }
-});
-
-router.get("/dashboard/users/:id/businesses/:bid", async (req, res) => {
-  try {
-    const businessId = req.params.bid;
-    const business = await Business.findById(businessId);
-
-    if (!business) {
-      return res
-        .status(404)
-        .json({ message: "No Business found", success: false });
-    }
-
-    res.status(200).json({ success: true, data: business });
-  } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ success: false, message: "Error fetching business" });
-  }
-});
-
-router.patch("/dashboard/users/:id/businesses/:bid", async (req, res) => {
-  try {
-    const businessId = req.params.bid;
-    const newData = req.body;
-    const business = await Business.findByIdAndUpdate(businessId, newData, {
-      new: true,
-      runValidators: true,
-    });
-
-    if (!business) {
-      return res
-        .status(404)
-        .json({ message: "Business not found", success: false });
-    }
-
-    res.status(200).json({
-      message: "Business settings updated successfully",
-      success: true,
-      data: business,
-    });
-  } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ success: false, message: "Error updating business data" });
-  }
-});
-
-router.delete("/dashboard/users/:id/businesses/:bid", async (req, res) => {
-  try {
-    const businessId = req.params.bid;
-
-    const business = await Business.findByIdAndDelete(businessId);
-
-    if (!business) {
-      return res
-        .status(404)
-        .json({ message: "Business not found", success: false });
-    }
-
-    res.status(204).json({
-      message: "Business Account deleted successfully",
-      success: true,
-      data: business,
-    });
-  } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ success: false, message: "Error deleting business data" });
-  }
-});
+// router.delete(
+//   "/dashboard/users/:id/businesses/:bid",
+//   auth,
+//   isAdmin,
+//   deleteBusiness
+// );
 
 //--------------------------------------------------------- Packages ----------------------------------
 
 //------------------- /dashboard/packages ------------------------------
 
-router.post("/dashboard/packages/new-package", async (req, res) => {
-  try {
-    const packageExists = await Package.findOne({
-      packageName: req.body.packageName,
-    });
-    const data = req.body;
+router.post("/dashboard/packages/new-package", auth, isAdmin, createNewPackage);
 
-    if (packageExists) {
-      return res.status(409).send({
-        message: "Package with same name already exists",
-        success: false,
-      });
-    }
+router.get("/dashboard/packages", auth, isAdmin, getAllPackages);
 
-    const package = new Package(data);
-    await package.save();
-    res.status(201).json({
-      message: "package created successfully",
-      success: true,
-      package: package,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Error creating package" });
-  }
-});
+router.get("/dashboard/packages/:id", auth, isAdmin, getPackage);
 
-router.get("/dashboard/packages", async (req, res) => {
-  try {
-    const packages = await Package.find({});
+router.patch("/dashboard/packages/:id", auth, isAdmin, updatePackage);
 
-    if (packages.length == 0) {
-      return res
-        .status(404)
-        .json({ message: "No packages found", success: false });
-    }
-
-    res.status(200).json({ success: true, packages: packages });
-  } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ success: false, message: "Error fetching packages" });
-  }
-});
-
-router.get("/dashboard/packages/:id", async (req, res) => {
-  try {
-    const packageId = req.params.id;
-    const package = await Package.findById(packageId);
-
-    if (!package) {
-      return res
-        .status(404)
-        .json({ message: "No package found", success: false });
-    }
-
-    res.status(200).json({ success: true, package: package });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Error fetching package" });
-  }
-});
-
-router.patch("/dashboard/packages/:id", async (req, res) => {
-  try {
-    const packageId = req.params.id;
-    const updates = req.body;
-    const package = await Package.findByIdAndUpdate(packageId, updates, {
-      new: true,
-      runValidators: true,
-    });
-
-    if (!package) {
-      return res
-        .status(404)
-        .json({ message: "No Package found", success: false });
-    }
-
-    res.status(200).json({
-      message: "Package updated successfully",
-      success: true,
-      package: package,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Error updating package" });
-  }
-});
-
-router.delete("/dashboard/packages/:id", async (req, res) => {
-  try {
-    const packageId = req.params.id;
-
-    const package = await Package.findByIdAndDelete(packageId);
-    if (!package) {
-      return res
-        .status(404)
-        .json({ message: "No Package found", success: false });
-    }
-
-    res.status(200).json({
-      message: "Package deleted successfully",
-      success: true,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Error deleting package" });
-  }
-});
+router.delete("/dashboard/packages/:id", auth, isAdmin, deletePackage);
 
 //--------------------------------------------------------- Orders ----------------------------------
+//---------------------/dashboard/orders---------------------------------------
 
-router.get("/dashboard/orders", async (req, res) => {
-  try {
-    const orders = await Order.find({});
+router.get("/dashboard/orders", auth, isAdmin, getAllOrders);
 
-    if (orders.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No Orders found!", success: false });
-    }
+router.get("/dashboard/orders/:id", auth, isAdmin, getOrder);
 
-    res.status(200).json({ success: true, orders: orders });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Error fetching orders" });
-  }
-});
+router.delete("/dashboard/orders/:id", auth, isAdmin, deleteOrder);
 
-// router.get("/dashboard/users/:id/businesses/:bid/orders", async (req, res) => {
-//   try {
-//     const businessId = req.params.bid;
-//     const orders = await Order.find({ business: businessId });
+// router.get("/dashboard/users/:id/businesses/:bid/orders", getBusinessOrder);
 
-//     if (orders.length === 0) {
-//       return res
-//         .status(404)
-//         .json({ message: "No Orders found!", success: false });
-//     }
+// router.get("/dashboard/users/:id/orders", getUserOrder);
 
-//     res.status(200).json({ success: true, orders: orders });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ success: false, message: "Error fetching orders" });
-//   }
-// });
-
-// router.get("/dashboard/users/:id/orders", async (req, res) => {
-//   try {
-//     const userId = req.params.id;
-//     const orders = await Order.find({ user: userId });
-
-//     if (orders.length === 0) {
-//       return res
-//         .status(404)
-//         .json({ message: "No Orders found!", success: false });
-//     }
-
-//     res.status(200).json({ success: true, orders: orders });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ success: false, message: "Error fetching orders" });
-//   }
-// });
-
-router.get("/dashboard/orders/:id", async (req, res) => {
-  try {
-    const orderId = req.params.id;
-    const orders = await Order.findById(orderId)
-      .populate("user")
-      .populate("business");
-
-    if (!orders) {
-      return res
-        .status(404)
-        .json({ message: "No Order found", success: false });
-    }
-
-    res.status(200).json({ success: true, order: orders });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Error fetching orders" });
-  }
-});
-
-router.delete("/dashboard/orders/:id", async (req, res) => {
-  try {
-    const orderId = req.params.id;
-
-    const order = await Order.findByIdAndDelete(orderId);
-    if (!order) {
-      return res
-        .status(404)
-        .json({ message: "No order found", success: false });
-    }
-
-    res
-      .status(200)
-      .json({ message: "Order deleted successfully", success: true });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Error deleting order" });
-  }
-});
+router.post("/add-addOn", auth, isAdmin, createNewAddOnProduct);
+router.get("/getAll-addOn", auth, isAdmin, getAllAddOnProducts);
+router.get("/get-addOn/:id", auth, isAdmin, getAddOnProducts);
+router.put("/update-addOn/:id", auth, isAdmin, updateAddOnProducts);
+router.delete("/delete-addOn/:id", auth, isAdmin, deleteAddOnProducts);
 
 module.exports = router;
