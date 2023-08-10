@@ -173,6 +173,24 @@ exports.getStatistics = catchAsyncError(async (req, res, next) => {
         },
       },
     ]);
+    const businesses = await businessModel.aggregate([
+      {
+        $match: {
+          $expr: {
+            $gt: [
+              "$createdAt",
+              { $dateSubtract: { startDate: date, unit: "day", amount: 1 } },
+            ],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+        },
+      },
+    ]);
     const orders = await orderModel.aggregate([
       {
         $match: {
@@ -211,6 +229,25 @@ exports.getStatistics = catchAsyncError(async (req, res, next) => {
     ]);
 
     const dailyUsers = await userModel.aggregate([
+      {
+        $match: {
+          $expr: {
+            $gt: [
+              "$createdAt",
+              { $dateSubtract: { startDate: date, unit: "day", amount: 6 } },
+            ],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          total: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+    const dailyBusinesses = await businessModel.aggregate([
       {
         $match: {
           $expr: {
@@ -270,9 +307,11 @@ exports.getStatistics = catchAsyncError(async (req, res, next) => {
 
     return res.send({
       users: users,
+      businesses: businesses,
       payments: payments,
       orders: orders,
       dailyUsers,
+      dailyBusinesses,
       dailyOrders,
       dailyPayments,
     });
@@ -300,6 +339,27 @@ exports.getStatistics = catchAsyncError(async (req, res, next) => {
         },
       },
     ]);
+    const businesses = await businessModel.aggregate([
+      {
+        $project: {
+          week: { $week: "$createdAt" },
+
+          year: { $year: "$createdAt" },
+        },
+      },
+      {
+        $match: {
+          year: year,
+          week: week,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+        },
+      },
+    ]);
     const payments = await orderModel.aggregate([
       {
         $project: {
@@ -365,6 +425,27 @@ exports.getStatistics = catchAsyncError(async (req, res, next) => {
       },
       { $sort: { _id: 1 } },
     ]);
+    const dailyBusinesses = await businessModel.aggregate([
+      {
+        $project: {
+          week: { $week: "$createdAt" },
+
+          year: { $year: "$createdAt" },
+        },
+      },
+      {
+        $match: {
+          year: year,
+        },
+      },
+      {
+        $group: {
+          _id: "$week",
+          total: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
     const dailyOrders = await orderModel.aggregate([
       {
         $project: {
@@ -386,7 +467,6 @@ exports.getStatistics = catchAsyncError(async (req, res, next) => {
       },
       { $sort: { _id: 1 } },
     ]);
-
     const dailyPayments = await orderModel.aggregate([
       {
         $project: {
@@ -411,9 +491,11 @@ exports.getStatistics = catchAsyncError(async (req, res, next) => {
     ]);
     return res.send({
       users: users,
+      businesses: businesses,
       payments: payments,
       orders: orders,
       dailyUsers,
+      dailyBusinesses,
       dailyOrders,
       dailyPayments,
     });
@@ -441,6 +523,27 @@ exports.getStatistics = catchAsyncError(async (req, res, next) => {
         },
       },
     ]);
+    const businesses = await businessModel.aggregate([
+      {
+        $project: {
+          month: { $month: "$createdAt" },
+
+          year: { $year: "$createdAt" },
+        },
+      },
+      {
+        $match: {
+          year: year,
+          month: month,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+        },
+      },
+    ]);
     const orders = await orderModel.aggregate([
       {
         $project: {
@@ -506,6 +609,27 @@ exports.getStatistics = catchAsyncError(async (req, res, next) => {
       },
       { $sort: { _id: 1 } },
     ]);
+    const dailyBusinesses = await businessModel.aggregate([
+      {
+        $project: {
+          month: { $month: "$createdAt" },
+
+          year: { $year: "$createdAt" },
+        },
+      },
+      {
+        $match: {
+          year: year,
+        },
+      },
+      {
+        $group: {
+          _id: "$month",
+          total: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
     const dailyOrders = await orderModel.aggregate([
       {
         $project: {
@@ -527,7 +651,6 @@ exports.getStatistics = catchAsyncError(async (req, res, next) => {
       },
       { $sort: { _id: 1 } },
     ]);
-
     const dailyPayments = await orderModel.aggregate([
       {
         $project: {
@@ -552,9 +675,11 @@ exports.getStatistics = catchAsyncError(async (req, res, next) => {
     ]);
     return res.send({
       users: users,
+      businesses: businesses,
       payments: payments,
       orders: orders,
       dailyUsers,
+      dailyBusinesses,
       dailyOrders,
       dailyPayments,
     });
