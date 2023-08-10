@@ -222,24 +222,20 @@ exports.updateBusinessAccount = catchAsyncError(async (req, res, next) => {
 });
 
 exports.getAllOrderHistory = catchAsyncError(async (req, res, next) => {
-  try {
-    const userId = req.userId;
-    const orders = await Order.findOne(
-      // { user: userId },
-      { business: req.params.bid }
-    )
-      .populate("user")
-      .populate("business")
-      .populate("products.package");
+  const userId = req.userId;
+  const orders = await Order.findOne(
+    // { user: userId },
+    { business: req.params.bid }
+  )
+    .populate("user")
+    .populate("business")
+    .populate("products.package");
 
-    if (!orders) {
-      return next(new ErrorHandler("No Order history", 404));
-    }
-
-    res.status(200).json({ success: true, orders: orders });
-  } catch (error) {
-    console.log(error);
+  if (!orders) {
+    return next(new ErrorHandler("No Order history", 404));
   }
+
+  res.status(200).json({ success: true, orders: orders });
 });
 
 exports.getOrderHistory = catchAsyncError(async (req, res, next) => {
