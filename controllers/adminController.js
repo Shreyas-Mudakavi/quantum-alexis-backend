@@ -26,6 +26,14 @@ exports.getStatistics = catchAsyncError(async (req, res, next) => {
         },
       },
     ]);
+    const businesses = await businessModel.aggregate([
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+        },
+      },
+    ]);
     const orders = await orderModel.aggregate([
       {
         $group: {
@@ -49,6 +57,27 @@ exports.getStatistics = catchAsyncError(async (req, res, next) => {
     ]);
 
     const dailyUsers = await userModel.aggregate([
+      {
+        $project: {
+          month: { $month: "$createdAt" },
+
+          year: { $year: "$createdAt" },
+        },
+      },
+      {
+        $match: {
+          year: year,
+        },
+      },
+      {
+        $group: {
+          _id: "$month",
+          total: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+    const dailyBusinesses = await businessModel.aggregate([
       {
         $project: {
           month: { $month: "$createdAt" },
@@ -115,9 +144,11 @@ exports.getStatistics = catchAsyncError(async (req, res, next) => {
 
     return res.status(200).json({
       users: users,
+      businesses: businesses,
       payments: payments,
       orders: orders,
       dailyUsers,
+      dailyBusinesses,
       dailyOrders,
       dailyPayments,
     });
