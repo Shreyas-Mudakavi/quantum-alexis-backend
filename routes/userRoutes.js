@@ -13,7 +13,7 @@ const {
   createNewOrder,
   getBusinessOrderHistory,
 } = require("../controllers/userController");
-const { getAddOnProductBelongsTo } = require("../controllers/addOnCOntroller");
+const { getAddOnProductBelongsTo } = require("../controllers/addOnController");
 const { auth } = require("../middlewares/auth");
 //const { auth } = require('../middlewares/authMiddleware');
 
