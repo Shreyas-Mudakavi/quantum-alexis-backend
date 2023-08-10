@@ -35,16 +35,6 @@ exports.register = catchAsyncError(async (req, res, next) => {
   // console.log("register ", req.body);
   // console.log("register prodss ", req.body.productsIncluded);
 
-  const newUser = new userModel(req.body);
-
-  const newBusiness = new businessModel(req.body);
-
-  newBusiness.user = newUser._id;
-
-  newUser.businesses.push(newBusiness._id);
-
-  await newBusiness.save();
-
   let orderTotalAmount = 0;
   let productsIncluded = [];
 
@@ -121,6 +111,20 @@ exports.register = catchAsyncError(async (req, res, next) => {
     orderTotalAmount = orderTotalAmount + addOn.productDetails[0]?.amount;
     productsIncluded.push(addOn.productDetails[0]);
   }
+
+  const newUser = new userModel(req.body);
+
+  const newBusiness = new businessModel(req.body);
+
+  newBusiness.user = newUser._id;
+
+  newUser.businesses.push(newBusiness._id);
+
+  newBusiness.productsIncluded = {
+    productName: productsIncluded,
+  };
+
+  await newBusiness.save();
 
   const unique_id = uuid();
   const orderId = unique_id.slice(0, 8);

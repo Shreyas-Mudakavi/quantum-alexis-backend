@@ -106,26 +106,26 @@ const businessSchema = new mongoose.Schema(
 
     //packages/products information :
 
-    productsIncluded: [
-      {
-        productName: {
-          type: Array,
+    productsIncluded: {
+      productName: [
+        {
+          type: Object,
         },
-        orderDate: {
-          type: Date,
-          default: new Date(),
-        },
-        fullfillmentStatus: {
-          type: String,
-        },
-        paymentStatus: {
-          type: String,
-        },
-        amount: {
-          type: Number,
-        },
+      ],
+      orderDate: {
+        type: Date,
+        default: new Date(),
       },
-    ],
+      // fullfillmentStatus: {
+      //   type: String,
+      // },
+      // paymentStatus: {
+      //   type: String,
+      // },
+      // amount: {
+      //   type: Number,
+      // },
+    },
   },
   {
     timestamps: true,

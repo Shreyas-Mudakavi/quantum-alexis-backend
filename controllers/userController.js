@@ -45,12 +45,6 @@ exports.createNewBusiness = catchAsyncError(async (req, res, next) => {
   // console.log("new businessss ", req.body);
   const user = await User.findById(userId);
 
-  const newBusiness = new Business(req.body);
-
-  newBusiness.user = user._id;
-
-  user.businesses.push(newBusiness._id);
-
   // // const orderFields = Object.keys(Order.schema.paths);
 
   // // if (orderFields.some((field) => req.body[field])) {
@@ -139,6 +133,16 @@ exports.createNewBusiness = catchAsyncError(async (req, res, next) => {
     orderTotalAmount = orderTotalAmount + addOn.productDetails[0]?.amount;
     productsIncluded.push(addOn.productDetails[0]);
   }
+
+  const newBusiness = new Business(req.body);
+
+  newBusiness.user = user._id;
+
+  newBusiness.productsIncluded = {
+    productName: productsIncluded,
+  };
+
+  user.businesses.push(newBusiness._id);
 
   // console.log("total ", orderTotalAmount);
   // console.log("prods inclu ", productsIncluded);
