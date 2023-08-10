@@ -244,7 +244,6 @@ exports.getStatistics = catchAsyncError(async (req, res, next) => {
       dailyUsers,
       dailyOrders,
       dailyPayments,
-      dailyQuantity,
     });
   }
 
@@ -385,7 +384,6 @@ exports.getStatistics = catchAsyncError(async (req, res, next) => {
       orders: orders,
       dailyUsers,
       dailyOrders,
-      dailyQuantity,
       dailyPayments,
     });
   }
@@ -527,7 +525,6 @@ exports.getStatistics = catchAsyncError(async (req, res, next) => {
       orders: orders,
       dailyUsers,
       dailyOrders,
-      dailyQuantity,
       dailyPayments,
     });
   }
