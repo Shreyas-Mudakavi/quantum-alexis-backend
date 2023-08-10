@@ -30,7 +30,7 @@ const {
   getAddOnProducts,
   updateAddOnProducts,
   deleteAddOnProducts,
-} = require("../controllers/addOnCOntroller");
+} = require("../controllers/addOnController");
 
 // Admin dashboard route protected with isAdmin middleware
 router.get("/statistics/:time", auth, isAdmin, getStatistics);
