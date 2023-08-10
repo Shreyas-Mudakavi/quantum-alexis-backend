@@ -755,7 +755,16 @@ exports.deleteBusiness = catchAsyncError(async (req, res, next) => {
     return next(new ErrorHandler("Business not found", 404));
   }
 
-  await business.remove();
+  const userBusinessId = await userModel.updateOne(
+    { _id: business.user },
+    { $pull: { businesses: business._id } }
+  );
+
+  const orderBusinessId = await orderModel.deleteOne({
+    business: business._id,
+  });
+
+  const businessDel = await businessModel.findByIdAndDelete(req.params.id);
 
   res.status(204).json({
     message: "Business Account deleted successfully",
