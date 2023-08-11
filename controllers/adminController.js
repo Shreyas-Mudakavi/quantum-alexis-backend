@@ -997,13 +997,30 @@ exports.createNewPackage = catchAsyncError(async (req, res, next) => {
 });
 
 exports.getAllPackages = catchAsyncError(async (req, res, next) => {
-  const packages = await packageModel.find({});
+  const packageCount = await packageModel.countDocuments();
+  const apiFeature = new APIFeatures(
+    packageModel.find().sort({ createdAt: -1 }),
+    req.query
+  ).search("packageName");
 
-  if (!packages) {
-    return next(new ErrorHandler("No Package found", 404));
+  let packagesDetails = await apiFeature.query;
+  let filteredPackagesCount = packagesDetails.length;
+  // if (req.query.resultPerPage && req.query.currentPage) {
+  apiFeature.pagination();
+
+  packagesDetails = await apiFeature.query.clone();
+  // }
+
+  if (!packagesDetails) {
+    return next(new ErrorHandler("No packages found", 404));
   }
 
-  res.status(200).json({ success: true, packages: packages });
+  res.status(200).json({
+    success: true,
+    packages: packagesDetails,
+    packageCount: packageCount,
+    filteredPackagesCount: filteredPackagesCount,
+  });
 });
 
 exports.getPackage = catchAsyncError(async (req, res, next) => {

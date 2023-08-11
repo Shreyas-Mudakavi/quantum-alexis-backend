@@ -21,6 +21,7 @@ const packageSchema = new mongoose.Schema(
     term: {
       type: String,
       required: true,
+      enum: ["monthly", "yearly"],
     },
     included: {
       type: Array,
